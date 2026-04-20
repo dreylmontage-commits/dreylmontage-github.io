@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dreyl Montage — Éditeur Vidéo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Playfair+Display:ital@1&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #080808;
+      --white: #f5f2ec;
+      --cream: #ede9df;
+      --gold: #c9a84c;
+      --gold-light: #e8c96f;
+      --gray: #888480;
+      --dark-gray: #1a1917;
+      --border: rgba(201,168,76,0.2);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--black);
+      color: var(--white);
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* CUSTOM CURSOR */
+    .cursor {
+      width: 10px; height: 10px;
+      background: var(--gold);
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.1s ease;
+    }
+    .cursor-ring {
+      width: 36px; height: 36px;
+      border: 1px solid rgba(201,168,76,0.5);
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: all 0.18s ease;
+    }
+    body:hover .cursor { opacity: 1; }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 24px 60px;
+      background: linear-gradient(to bottom, rgba(8,8,8,0.95), transparent);
+      backdrop-filter: blur(2px);
+    }
+    .nav-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.15em;
+      color: var(--gold);
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 40px; list-style: none; }
+    .nav-links a {
+      font-size: 0.78rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gray);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    .nav-links a:hover { color: var(--white); }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-left {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 140px 60px 80px;
+      position: relative;
+      z-index: 2;
+    }
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-size: 0.72rem; letter-spacing: 0.25em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 36px;
+      opacity: 0; animation: fadeUp 0.8s 0.2s forwards;
+    }
+    .hero-tag::before {
+      content: ''; width: 30px; height: 1px; background: var(--gold);
+    }
+    .hero-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(4rem, 7vw, 7.5rem);
+      line-height: 0.92;
+      letter-spacing: 0.02em;
+      margin-bottom: 8px;
+      opacity: 0; animation: fadeUp 0.8s 0.4s forwards;
+    }
+    .hero-title span {
+      display: block;
+      color: transparent;
+      -webkit-text-stroke: 1px var(--gold);
+    }
+    .hero-subtitle {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.05rem;
+      color: var(--gray);
+      margin-top: 24px; margin-bottom: 48px;
+      max-width: 340px; line-height: 1.6;
+      opacity: 0; animation: fadeUp 0.8s 0.6s forwards;
+    }
+    .hero-cta {
+      display: flex; gap: 20px; align-items: center;
+      opacity: 0; animation: fadeUp 0.8s 0.8s forwards;
+    }
+    .btn-primary {
+      display: inline-block;
+      padding: 14px 36px;
+      background: var(--gold);
+      color: var(--black);
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+      text-decoration: none;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); }
+    .btn-outline {
+      display: inline-block;
+      padding: 14px 36px;
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-size: 0.78rem; font-weight: 400; letter-spacing: 0.15em; text-transform: uppercase;
+      text-decoration: none;
+      transition: border-color 0.3s, color 0.3s;
+    }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+    .hero-right {
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-visual {
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(135deg, rgba(201,168,76,0.08) 0%, transparent 50%),
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 60px,
+          rgba(201,168,76,0.04) 60px,
+          rgba(201,168,76,0.04) 61px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 60px,
+          rgba(201,168,76,0.04) 60px,
+          rgba(201,168,76,0.04) 61px
+        );
+    }
+    .hero-big-text {
+      position: absolute;
+      bottom: -20px; right: -10px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(8rem, 16vw, 18rem);
+      line-height: 1;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(201,168,76,0.12);
+      user-select: none; pointer-events: none;
+      white-space: nowrap;
+    }
+    .hero-stats {
+      position: absolute;
+      bottom: 60px; left: 60px; right: 60px;
+      display: flex; gap: 40px;
+      border-top: 1px solid var(--border);
+      padding-top: 30px;
+    }
+    .stat { flex: 1; }
+    .stat-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.2rem; color: var(--gold); letter-spacing: 0.05em;
+    }
+    .stat-label {
+      font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--gray); margin-top: 4px;
+    }
+
+    /* DIVIDER */
+    .section-divider {
+      height: 1px; background: var(--border);
+      margin: 0 60px;
+    }
+
+    /* MARQUEE */
+    .marquee-wrap {
+      overflow: hidden;
+      background: var(--dark-gray);
+      padding: 18px 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .marquee-track {
+      display: flex; gap: 60px;
+      animation: marquee 22s linear infinite;
+      width: max-content;
+    }
+    .marquee-item {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem; letter-spacing: 0.25em;
+      color: var(--gray); white-space: nowrap;
+      display: flex; align-items: center; gap: 60px;
+    }
+    .marquee-item::after {
+      content: '◆'; color: var(--gold); font-size: 0.6rem;
+    }
+    @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+    /* SERVICES */
+    .section { padding: 100px 60px; }
+    .section-header {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      margin-bottom: 70px;
+    }
+    .section-label {
+      font-size: 0.72rem; letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--gold); display: flex; align-items: center; gap: 12px;
+    }
+    .section-label::before { content: ''; width: 24px; height: 1px; background: var(--gold); }
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.5rem, 4vw, 4rem);
+      line-height: 1; margin-top: 12px;
+    }
+    .section-desc {
+      max-width: 320px; font-size: 0.88rem; color: var(--gray);
+      line-height: 1.7; text-align: right;
+    }
+
+    .services-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+    .service-card {
+      background: var(--black);
+      padding: 50px 40px;
+      position: relative; overflow: hidden;
+      transition: background 0.4s;
+    }
+    .service-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: var(--gold);
+      transform: scaleX(0); transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+    .service-card:hover { background: var(--dark-gray); }
+    .service-card:hover::before { transform: scaleX(1); }
+    .service-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 3.5rem; color: rgba(201,168,76,0.12);
+      line-height: 1; margin-bottom: 24px;
+    }
+    .service-icon { font-size: 1.8rem; margin-bottom: 20px; }
+    .service-title {
+      font-size: 1rem; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; margin-bottom: 14px;
+    }
+    .service-desc { font-size: 0.85rem; color: var(--gray); line-height: 1.7; }
+
+    /* PORTFOLIO */
+    #portfolio { background: var(--dark-gray); }
+    .portfolio-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 2px;
+    }
+    .portfolio-item {
+      position: relative; overflow: hidden;
+      background: #111;
+      aspect-ratio: 16/9;
+      cursor: none;
+    }
+    .portfolio-item.tall { grid-row: span 2; aspect-ratio: unset; }
+    .portfolio-thumb {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s ease, filter 0.4s;
+      filter: grayscale(30%);
+    }
+    .portfolio-item:hover .portfolio-thumb { transform: scale(1.06); filter: grayscale(0%); }
+    .portfolio-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(8,8,8,0.9) 0%, transparent 60%);
+      opacity: 0; transition: opacity 0.4s;
+      display: flex; flex-direction: column;
+      justify-content: flex-end; padding: 30px;
+    }
+    .portfolio-item:hover .portfolio-overlay { opacity: 1; }
+    .portfolio-platform {
+      font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 6px;
+    }
+    .portfolio-name { font-size: 1.1rem; font-weight: 600; }
+    .portfolio-play {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.7);
+      width: 56px; height: 56px;
+      border: 1px solid rgba(255,255,255,0.5);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 1.2rem;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    .portfolio-item:hover .portfolio-play { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+    /* Placeholder visuals for portfolio items */
+    .placeholder-vid {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem; letter-spacing: 0.2em;
+      color: var(--gray);
+      background: linear-gradient(135deg, #111 0%, #1a1917 100%);
+      flex-direction: column; gap: 10px;
+    }
+    .placeholder-vid .thumb-num { font-size: 4rem; color: rgba(201,168,76,0.15); }
+
+    /* PROCESS */
+    .process-steps {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+      position: relative;
+    }
+    .process-steps::before {
+      content: ''; position: absolute;
+      top: 28px; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(to right, transparent, var(--gold), transparent);
+    }
+    .step { padding: 0 30px; text-align: center; }
+    .step-circle {
+      width: 56px; height: 56px;
+      border: 1px solid var(--gold);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem; color: var(--gold);
+      background: var(--black);
+      position: relative; z-index: 1;
+    }
+    .step-title { font-size: 0.88rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+    .step-desc { font-size: 0.8rem; color: var(--gray); line-height: 1.7; }
+
+    /* TESTIMONIALS */
+    #testimonials { background: var(--dark-gray); }
+    .testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; background: var(--border); border: 1px solid var(--border); }
+    .testimonial-card {
+      background: var(--dark-gray);
+      padding: 44px 36px;
+      transition: background 0.3s;
+    }
+    .testimonial-card:hover { background: #1f1e1c; }
+    .testimonial-stars { color: var(--gold); font-size: 0.8rem; letter-spacing: 4px; margin-bottom: 24px; }
+    .testimonial-text { font-size: 0.9rem; color: var(--white); line-height: 1.8; margin-bottom: 28px; font-style: italic; }
+    .testimonial-author { display: flex; align-items: center; gap: 14px; }
+    .testimonial-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), #8b6914);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 600; color: var(--black);
+    }
+    .author-name { font-size: 0.82rem; font-weight: 600; }
+    .author-role { font-size: 0.72rem; color: var(--gray); margin-top: 2px; }
+
+    /* CONTACT */
+    .contact-inner {
+      max-width: 700px; margin: 0 auto; text-align: center;
+    }
+    .contact-inner .section-label { justify-content: center; }
+    .contact-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(3rem, 6vw, 6rem);
+      line-height: 0.95; margin: 16px 0 32px;
+    }
+    .contact-title span { color: var(--gold); }
+    .contact-desc { font-size: 0.95rem; color: var(--gray); line-height: 1.8; margin-bottom: 50px; }
+    .contact-form { display: flex; flex-direction: column; gap: 16px; text-align: left; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-label { font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray); }
+    .form-input, .form-textarea {
+      background: var(--dark-gray);
+      border: 1px solid var(--border);
+      color: var(--white);
+      padding: 14px 18px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    .form-input:focus, .form-textarea:focus { border-color: var(--gold); }
+    .form-textarea { resize: vertical; min-height: 130px; }
+    .form-submit {
+      margin-top: 8px;
+      padding: 16px 48px;
+      background: var(--gold);
+      color: var(--black);
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+      cursor: none;
+      transition: background 0.3s, transform 0.2s;
+      align-self: flex-start;
+    }
+    .form-submit:hover { background: var(--gold-light); transform: translateY(-2px); }
+
+    /* FOOTER */
+    footer {
+      padding: 40px 60px;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .footer-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem; letter-spacing: 0.2em; color: var(--gold);
+    }
+    .footer-copy { font-size: 0.75rem; color: var(--gray); }
+    .footer-socials { display: flex; gap: 20px; }
+    .footer-socials a {
+      font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--gray); text-decoration: none;
+      transition: color 0.3s;
+    }
+    .footer-socials a:hover { color: var(--gold); }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .reveal {
+      opacity: 0; transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--black); }
+    ::-webkit-scrollbar-thumb { background: var(--gold); }
+
+    /* MOBILE */
+    @media (max-width: 900px) {
+      nav { padding: 20px 24px; }
+      .nav-links { display: none; }
+      .hero { grid-template-columns: 1fr; min-height: auto; }
+      .hero-left { padding: 120px 24px 60px; }
+      .hero-right { display: none; }
+      .hero-stats { position: static; margin: 40px 24px 0; padding-top: 24px; gap: 24px; flex-wrap: wrap; }
+      .section { padding: 70px 24px; }
+      .section-divider { margin: 0 24px; }
+      .section-header { flex-direction: column; gap: 20px; }
+      .section-desc { text-align: left; max-width: 100%; }
+      .services-grid { grid-template-columns: 1fr; }
+      .portfolio-grid { grid-template-columns: 1fr; }
+      .portfolio-item.tall { aspect-ratio: 16/9; }
+      .process-steps { grid-template-columns: 1fr 1fr; gap: 40px; }
+      .process-steps::before { display: none; }
+      .testimonials-grid { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 16px; text-align: center; }
+      body { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">Dreyl</a>
+  <ul class="nav-links">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#portfolio">Portfolio</a></li>
+    <li><a href="#process">Process</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="hero-left">
+    <div class="hero-tag">Monteur Vidéo · Réseaux Sociaux</div>
+    <h1 class="hero-title">
+      Dreyl<br><span>Montage</span>
+    </h1>
+    <p class="hero-subtitle">
+      Je transforme vos rushs en contenus qui captent, retiennent et convertissent — sur chaque plateforme.
+    </p>
+    <div class="hero-cta">
+      <a href="#portfolio" class="btn-primary">Voir le portfolio</a>
+      <a href="#contact" class="btn-outline">Me contacter</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-visual"></div>
+    <div class="hero-big-text">DM</div>
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-number">150+</div>
+        <div class="stat-label">Projets livrés</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">40+</div>
+        <div class="stat-label">Clients satisfaits</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">5M+</div>
+        <div class="stat-label">Vues générées</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee-track">
+    <div class="marquee-item">Instagram Reels</div>
+    <div class="marquee-item">TikTok</div>
+    <div class="marquee-item">YouTube Shorts</div>
+    <div class="marquee-item">LinkedIn Video</div>
+    <div class="marquee-item">Transition Créative</div>
+    <div class="marquee-item">Motion Design</div>
+    <div class="marquee-item">Color Grading</div>
+    <div class="marquee-item">Sound Design</div>
+    <!-- duplicate for loop -->
+    <div class="marquee-item">Instagram Reels</div>
+    <div class="marquee-item">TikTok</div>
+    <div class="marquee-item">YouTube Shorts</div>
+    <div class="marquee-item">LinkedIn Video</div>
+    <div class="marquee-item">Transition Créative</div>
+    <div class="marquee-item">Motion Design</div>
+    <div class="marquee-item">Color Grading</div>
+    <div class="marquee-item">Sound Design</div>
+  </div>
+</div>
+
+<!-- SERVICES -->
+<section class="section" id="services">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-label">Ce que je propose</div>
+      <h2 class="section-title">Mes Services</h2>
+    </div>
+    <p class="section-desc">Des formats taillés pour l'algorithme et l'attention humaine.</p>
+  </div>
+  <div class="services-grid reveal">
+    <div class="service-card">
+      <div class="service-number">01</div>
+      <div class="service-icon">🎬</div>
+      <div class="service-title">Reels & Shorts</div>
+      <p class="service-desc">Montage vertical optimisé pour Instagram Reels et YouTube Shorts. Hooks percutants, rythme accrocheur, sous-titres dynamiques.</p>
+    </div>
+    <div class="service-card">
+      <div class="service-number">02</div>
+      <div class="service-icon">🎵</div>
+      <div class="service-title">TikTok Créatif</div>
+      <p class="service-desc">Vidéos natives TikTok avec transitions tendances, synchronisation musicale et storytelling adapté à la plateforme.</p>
+    </div>
+    <div class="service-card">
+      <div class="service-number">03</div>
+      <div class="service-icon">🎨</div>
+      <div class="service-title">Color Grading</div>
+      <p class="service-desc">Étalonnage professionnel pour une identité visuelle forte et cohérente sur l'ensemble de vos contenus.</p>
+    </div>
+    <div class="service-card">
+      <div class="service-number">04</div>
+      <div class="service-icon">✏️</div>
+      <div class="service-title">Motion Design</div>
+      <p class="service-desc">Textes animés, intros, logos et éléments graphiques pour donner du caractère à chaque vidéo.</p>
+    </div>
+    <div class="service-card">
+      <div class="service-number">05</div>
+      <div class="service-icon">🔊</div>
+      <div class="service-title">Sound Design</div>
+      <p class="service-desc">Mixage audio soigné, effets sonores et sélection musicale pour une expérience complète et immersive.</p>
+    </div>
+    <div class="service-card">
+      <div class="service-number">06</div>
+      <div class="service-icon">📦</div>
+      <div class="service-title">Pack Contenu</div>
+      <p class="service-desc">Abonnement mensuel pour créateurs et marques : livraison régulière de vidéos prêtes à publier, clé en main.</p>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- PORTFOLIO -->
+<section class="section" id="portfolio">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-label">Travaux récents</div>
+      <h2 class="section-title">Portfolio</h2>
+    </div>
+    <p class="section-desc">Une sélection de projets réalisés pour des créateurs et marques.</p>
+  </div>
+  <div class="portfolio-grid reveal">
+    <!-- Item 1 - large -->
+    <div class="portfolio-item tall">
+      <div class="placeholder-vid">
+        <div class="thumb-num">01</div>
+        <div>BRAND CONTENT</div>
+      </div>
+      <div class="portfolio-overlay">
+        <div class="portfolio-platform">Instagram Reels · Marque Mode</div>
+        <div class="portfolio-name">Collection Automne — 1.2M vues</div>
+      </div>
+      <div class="portfolio-play">▶</div>
+    </div>
+    <!-- Item 2 -->
+    <div class="portfolio-item">
+      <div class="placeholder-vid">
+        <div class="thumb-num">02</div>
+        <div>TIKTOK</div>
+      </div>
+      <div class="portfolio-overlay">
+        <div class="portfolio-platform">TikTok · Créateur Lifestyle</div>
+        <div class="portfolio-name">Daily Vlog Viral — 800K vues</div>
+      </div>
+      <div class="portfolio-play">▶</div>
+    </div>
+    <!-- Item 3 -->
+    <div class="portfolio-item">
+      <div class="placeholder-vid">
+        <div class="thumb-num">03</div>
+        <div>SHORTS</div>
+      </div>
+      <div class="portfolio-overlay">
+        <div class="portfolio-platform">YouTube Shorts · Tech</div>
+        <div class="portfolio-name">Review Express — 600K vues</div>
+      </div>
+      <div class="portfolio-play">▶</div>
+    </div>
+  </div>
+  <div style="text-align:center; margin-top: 50px;">
+    <a href="#contact" class="btn-outline reveal">Demander mes showreels complets →</a>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="section" id="process" style="background: var(--dark-gray);">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-label">Comment ça marche</div>
+      <h2 class="section-title">Mon Process</h2>
+    </div>
+    <p class="section-desc">Simple, rapide, efficace. Du brief à la livraison finale.</p>
+  </div>
+  <div class="process-steps reveal">
+    <div class="step">
+      <div class="step-circle">01</div>
+      <div class="step-title">Brief</div>
+      <p class="step-desc">On discute de vos besoins, objectifs et du ton souhaité pour vos vidéos.</p>
+    </div>
+    <div class="step">
+      <div class="step-circle">02</div>
+      <div class="step-title">Rushs</div>
+      <p class="step-desc">Vous m'envoyez vos fichiers via WeTransfer ou Drive. Simple et rapide.</p>
+    </div>
+    <div class="step">
+      <div class="step-circle">03</div>
+      <div class="step-title">Montage</div>
+      <p class="step-desc">Je travaille sur le montage et vous envoie une première version sous 48h.</p>
+    </div>
+    <div class="step">
+      <div class="step-circle">04</div>
+      <div class="step-title">Livraison</div>
+      <p class="step-desc">Après vos retours et corrections, je livre les fichiers finaux prêts à publier.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section" id="testimonials">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-label">Ce qu'ils en disent</div>
+      <h2 class="section-title">Témoignages</h2>
+    </div>
+    <p class="section-desc">Créateurs et marques qui font confiance à Dreyl.</p>
+  </div>
+  <div class="testimonials-grid reveal">
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">"Dreyl a complètement transformé mon contenu TikTok. Le style, le rythme, tout est au top. Mes vues ont explosé depuis qu'on travaille ensemble."</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">SL</div>
+        <div>
+          <div class="author-name">Sofia L.</div>
+          <div class="author-role">Créatrice Lifestyle · 280K abonnés</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">"Réactif, professionnel et créatif. Nos Reels Instagram génèrent maintenant 3x plus d'engagement. Je recommande à 100%."</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">MK</div>
+        <div>
+          <div class="author-name">Marc K.</div>
+          <div class="author-role">Fondateur · Marque Streetwear</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">"La qualité des montages est bluffante. Dreyl comprend vraiment l'algorithme et adapte chaque vidéo à la plateforme. Un vrai partenaire."</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">AC</div>
+        <div>
+          <div class="author-name">Alex C.</div>
+          <div class="author-role">YouTubeur Tech · 95K abonnés</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="section" id="contact" style="background: var(--dark-gray);">
+  <div class="contact-inner">
+    <div class="section-label reveal">Travaillons ensemble</div>
+    <h2 class="contact-title reveal">Prêt à <span>passer</span><br>au niveau supérieur ?</h2>
+    <p class="contact-desc reveal">Décrivez-moi votre projet. Je réponds sous 24h et on planifie un appel gratuit pour cerner vos besoins.</p>
+    <form class="contact-form reveal" onsubmit="handleSubmit(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Prénom</label>
+          <input type="text" class="form-input" placeholder="Jean" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" placeholder="jean@exemple.com" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Plateforme cible</label>
+        <input type="text" class="form-input" placeholder="TikTok, Instagram, YouTube Shorts..." />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Décrivez votre projet</label>
+        <textarea class="form-textarea" placeholder="Parlez-moi de votre contenu, de vos objectifs, de votre audience..."></textarea>
+      </div>
+      <button type="submit" class="form-submit">Envoyer le message</button>
+    </form>
+    <div id="form-success" style="display:none; margin-top:24px; color:var(--gold); font-size:0.9rem; letter-spacing:0.05em;">
+      ✓ Message envoyé ! Je vous réponds dans les 24h.
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Dreyl Montage</div>
+  <div class="footer-copy">© 2025 Dreyl Montage — Tous droits réservés</div>
+  <div class="footer-socials">
+    <a href="#">TikTok</a>
+    <a href="#">Instagram</a>
+    <a href="#">LinkedIn</a>
+  </div>
+</footer>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  function animCursor() {
+    cursor.style.left = mx + 'px'; cursor.style.top = my + 'px';
+    rx += (mx - rx) * 0.14; ry += (my - ry) * 0.14;
+    ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+    requestAnimationFrame(animCursor);
+  }
+  animCursor();
+
+  // Hover effect on clickables
+  document.querySelectorAll('a, button, .service-card, .portfolio-item').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      cursor.style.transform = 'translate(-50%,-50%) scale(2)';
+      ring.style.transform = 'translate(-50%,-50%) scale(1.5)';
+      ring.style.borderColor = 'rgba(201,168,76,0.8)';
+    });
+    el.addEventListener('mouseleave', () => {
+      cursor.style.transform = 'translate(-50%,-50%) scale(1)';
+      ring.style.transform = 'translate(-50%,-50%) scale(1)';
+      ring.style.borderColor = 'rgba(201,168,76,0.5)';
+    });
+  });
+
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 80);
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  reveals.forEach(el => io.observe(el));
+
+  // Form submit
+  function handleSubmit(e) {
+    e.preventDefault();
+    e.target.style.display = 'none';
+    document.getElementById('form-success').style.display = 'block';
+  }
+
+  // Nav transparency
+  window.addEventListener('scroll', () => {
+    const nav = document.querySelector('nav');
+    nav.style.background = window.scrollY > 60
+      ? 'rgba(8,8,8,0.97)'
+      : 'linear-gradient(to bottom, rgba(8,8,8,0.95), transparent)';
+  });
+</script>
+</body>
+</html>
